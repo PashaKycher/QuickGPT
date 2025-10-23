@@ -6,11 +6,15 @@ import userRouter from './routes/userRoutes.js'
 import chatRouter from './routes/chatRoutes.js'
 import messageRouter from './routes/messageRouter.js'
 import creditRouter from './routes/creditRoutes.js'
+import { stripeWebhooks } from './controllers/webhooksController.js'
 
 const app = express()
 
 // Connect to MongoDB
 await connectDB()
+
+// stripe webhook
+app.post('/api/stripe', express.raw({ type: 'application/json' }), stripeWebhooks)
 
 //  Middleware
 app.use(cors())

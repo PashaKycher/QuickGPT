@@ -1,7 +1,7 @@
-import Transaction from "../models/Transaction"
+import Transaction from "../models/Transaction.js"
 import Stripe from "stripe"
 
-
+ 
 // dummy plans
 const plans = [
     {
@@ -65,6 +65,7 @@ export const purchasePlan = async (req, res) => {
             })
         }
 
+        // create transaction
         const transaction = await Transaction.create({
             userId: userId,
             planId: plan._id,
