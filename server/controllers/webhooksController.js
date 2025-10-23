@@ -21,10 +21,8 @@ export const stripeWebhooks = async (req, res) => {
                 const sessionList = await stripe.checkout.sessions.list({
                     payment_intent: paymentIntent.id,
                 })
-                console.log(paymentIntent.id)
 
                 const session = sessionList.data[0]
-                console.log(session)
                 const { transactionId, appId } = session.metadata
 
                 if (appId === 'quickgpt') {
