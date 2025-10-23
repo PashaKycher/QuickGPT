@@ -16,7 +16,7 @@ export const stripeWebhooks = async (req, res) => {
 
     try {
         switch (event.type) {
-            case 'checkout.session.completed':{
+            case 'payment_intent.succeeded':{
                 const paymentIntent = event.data.object
                 const sessionList = await stripe.checkout.sessions.list({
                     payment_intent: paymentIntent.id,
@@ -32,8 +32,9 @@ export const stripeWebhooks = async (req, res) => {
                     await transaction.save()
 
                     // update user credits
-                    await User.updeteOne({ _id: transaction.userId }, { $inc: { credits: transaction.credits } })
-                    
+                    const user = await User.findOne({ _id: transaction.userId })
+                    user.credits += transaction.credits
+                    await user.save()
                 } else {
                     return res.json({ received: true, message: "Ignored event: Invalid app" })
                 }
