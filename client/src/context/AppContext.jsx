@@ -1,28 +1,73 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dummyChats, dummyUserData } from "../assets/assets";
+import axios from "axios";
+import toast from "react-hot-toast";
 
+
+axios.defaults.baseURL = import.meta.env.VITE_SERVER_URL
 
 const AppContext = createContext()
 
-export const AppContextProvider = ({children}) => {
+export const AppContextProvider = ({ children }) => {
     const navigate = useNavigate()
     const [user, setUser] = useState(null)
-    const[chats, setChats] = useState([])
+    const [chats, setChats] = useState([])
     const [selectedChat, setSelectedChat] = useState(null)
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+    const [token, setToken] = useState(localStorage.getItem('token') || null)
+    const [lodingUser, setLodingUser] = useState(true)
 
-    const fetchUser = () => {
-        setUser(dummyUserData)
+    const fetchUser = async () => {
+        try {
+            const { data } = await axios.get('/api/user/data', { headers: { Authorization: token } })
+            if (data.success) {
+                setUser(data.user)
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error.message || error)
+        } finally {
+            setLodingUser(false)
+        }
     }
 
-    const fetchUserChats = () => {
-        setChats(dummyChats)
-        setSelectedChat(dummyChats[0])
+    const createNewChat = async () => {
+        try {
+            if (!user) {
+                return toast.error('Login to create a new chat')
+            }
+
+            navigate('/')
+            await axios.get('/api/chat/create', { headers: { Authorization: token } })
+            await fetchUserChats()
+        } catch (error) {
+            toast.error(error.message || error)
+        }
+    }
+
+    const fetchUserChats = async () => {
+        try {
+            const { data } = await axios.get('/api/chat/get', { headers: { Authorization: token } })
+            if (data.success) {
+                setChats(data.chats)
+                if (data.chats.length === 0) {
+                    await createNewChat()
+                    return fetchUserChats()
+                } else {
+                    setSelectedChat(data.chats[0])
+                }
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message || error)
+        }
     }
 
     useEffect(() => {
-        if(theme === 'dark') {
+        if (theme === 'dark') {
             document.documentElement.classList.add('dark')
         } else {
             document.documentElement.classList.remove('dark')
@@ -31,11 +76,16 @@ export const AppContextProvider = ({children}) => {
     }, [theme])
 
     useEffect(() => {
-        fetchUser()
-    }, [])
+        if (token) {
+            fetchUser()
+        } else {
+            setUser(null)
+            setLodingUser(false)
+        }
+    }, [token])
 
     useEffect(() => {
-        if(user) {
+        if (user) {
             fetchUserChats()
         } else {
             setChats([])
@@ -43,7 +93,10 @@ export const AppContextProvider = ({children}) => {
         }
     }, [user])
 
-    const value = {navigate, user, setUser, chats, setChats, selectedChat, setSelectedChat, theme, setTheme}
+    const value = { 
+        navigate, user, setUser, chats, setChats, selectedChat, setSelectedChat, axios, 
+        theme, setTheme, lodingUser, createNewChat, token, setToken, fetchUserChats
+    }
 
     return (
         <AppContext.Provider value={value}>
