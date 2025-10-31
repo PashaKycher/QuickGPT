@@ -7,7 +7,7 @@ const Loding = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/')
-    }, 8000)
+    }, 5000)
     return () => clearTimeout(timer)
   }, [])
 
